@@ -19,26 +19,28 @@ Meus agentes do Claude Code, prontos para levar para qualquer projeto. Um **orqu
 
 ### Pré-requisitos no projeto
 
-- **Jira:** um MCP do Jira/Atlassian configurado. O `analyst` herda as ferramentas MCP da sessão. Sem MCP, ele devolve o texto pronto para colar.
+- **Jira:** o MCP oficial da Atlassian, já declarado no `.mcp.json` (OAuth, sem token). Veja [MCP do Jira (Atlassian)](#mcp-do-jira-atlassian). O `analyst` herda as ferramentas MCP da sessão. Sem MCP, ele devolve o texto pronto para colar.
 - **GitLab:** `glab` autenticado para o `builder` abrir os MRs. Sem `glab`, ele usa o link de criação de MR que aparece no push.
 
 ## Instalação
 
 ### Opção 1: copiar a pasta `.claude` (projeto sem `.claude`)
 
-O repo já é uma pasta `.claude` pronta (agentes + `settings.json` que inicia no orquestrador):
+O repo já traz a pasta `.claude` pronta (agentes + `settings.json` que inicia no orquestrador) e, na raiz, o `.mcp.json` do Jira. Copie os dois:
 
 ```bash
 git clone https://github.com/rafaelsantos01/agent-squad.git ~/agent-squad
 cp -r ~/agent-squad/.claude ./meu-projeto/
+cp ~/agent-squad/.mcp.json ./meu-projeto/
 ```
 
 ```powershell
 git clone https://github.com/rafaelsantos01/agent-squad.git $HOME\agent-squad
 Copy-Item -Recurse $HOME\agent-squad\.claude .\meu-projeto\
+Copy-Item $HOME\agent-squad\.mcp.json .\meu-projeto\
 ```
 
-> Se o projeto já tem `.claude/settings.json`, copiar a pasta inteira sobrescreve esse arquivo. Nesse caso use a opção 2.
+> Se o projeto já tem `.claude/settings.json` ou `.mcp.json`, copiar sobrescreve esses arquivos. Nesse caso use a opção 2.
 
 ### Opção 2: instalador (mescla com um `.claude` existente)
 
@@ -65,9 +67,41 @@ O instalador:
 
 - copia os agentes para `.claude/agents/` do projeto;
 - cria `.claude/settings.json` com `"agent": "orchestrator"` (se ainda não existir), para a sessão já começar no orquestrador;
-- não sobrescreve agentes existentes, a menos que você passe `--force` (`-Force` no PowerShell).
+- copia o `.mcp.json` (servidor `atlassian`, OAuth) para a raiz do projeto; se já existir um, não sobrescreve e mostra o trecho para mesclar;
+- não sobrescreve agentes nem o `.mcp.json` existentes, a menos que você passe `--force` (`-Force` no PowerShell). Com `--force`, o `.mcp.json` é substituído inteiro.
 
-Para instalar para todos os projetos: `--global` (`-Global`), que usa `~/.claude/agents/`. Nesse modo, inicie com `claude --agent orchestrator`.
+Para instalar para todos os projetos: `--global` (`-Global`), que usa `~/.claude/agents/`. Nesse modo, inicie com `claude --agent orchestrator`. O `.mcp.json` não é copiado; o instalador mostra o comando para registrar o MCP do Jira no escopo do usuário.
+
+## MCP do Jira (Atlassian)
+
+O `.mcp.json` na raiz do projeto declara o servidor MCP remoto oficial da Atlassian:
+
+```json
+{
+  "mcpServers": {
+    "atlassian": {
+      "type": "http",
+      "url": "https://mcp.atlassian.com/v2/mcp"
+    }
+  }
+}
+```
+
+Ele usa OAuth: o arquivo não tem token nenhum. O login fica nas credenciais do seu usuário (keychain do sistema), nunca no repo.
+
+1. Abra o `claude` no projeto. Na primeira vez ele pergunta se você aprova os servidores MCP do `.mcp.json`: aprove o `atlassian`.
+2. Rode `/mcp`, escolha `atlassian` e autentique no navegador com sua conta Atlassian.
+3. Pronto: o `analyst` passa a usar as ferramentas do Jira.
+
+- Revogar o login: `claude mcp logout atlassian`.
+- Refazer a escolha de aprovar/recusar os servidores do projeto: `claude mcp reset-project-choices`.
+- Usar em todos os projetos sem o `.mcp.json`: `claude mcp add --scope user --transport http atlassian https://mcp.atlassian.com/v2/mcp`.
+
+### Segredos
+
+- Nunca commite token, senha ou chave de API. Este repo é público.
+- Se um dia precisar de token, use `${NOME_DA_VARIAVEL}` no `.mcp.json` e defina o valor numa variável de ambiente, fora do repo.
+- `.env`, `.env.*` e `.claude/settings.local.json` estão no `.gitignore`.
 
 ## Uso
 
