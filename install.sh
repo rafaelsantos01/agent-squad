@@ -6,6 +6,7 @@
 #   ./install.sh --global        # instala em ~/.claude/agents
 #   curl -fsSL https://raw.githubusercontent.com/rafaelsantos01/agent-squad/main/install.sh | bash
 #   curl -fsSL .../install.sh | bash -s -- --global
+# Também copia o .mcp.json (MCP do Jira via OAuth) para a raiz do projeto.
 set -euo pipefail
 
 REPO_RAW="${AGENT_SQUAD_RAW:-https://raw.githubusercontent.com/rafaelsantos01/agent-squad/main}"
@@ -20,7 +21,7 @@ for arg in "$@"; do
     -h|--help)
       echo "Uso: install.sh [--global] [--force]"
       echo "  --global  instala em ~/.claude/agents em vez do projeto atual"
-      echo "  --force   sobrescreve agentes que já existem"
+      echo "  --force   sobrescreve agentes e o .mcp.json que já existem (substitui o .mcp.json inteiro)"
       exit 0 ;;
     *) echo "Opção desconhecida: $arg" >&2; exit 1 ;;
   esac
@@ -35,9 +36,11 @@ DEST="$BASE/agents"
 mkdir -p "$DEST"
 
 # Se rodando de um clone local, copia os arquivos; senão baixa do GitHub.
+ROOT_DIR=""
 SRC_DIR=""
 if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "$(dirname "${BASH_SOURCE[0]}")/.claude/agents/orchestrator.md" ]; then
-  SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.claude/agents"
+  ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  SRC_DIR="$ROOT_DIR/.claude/agents"
 fi
 
 for name in "${AGENTS[@]}"; do
@@ -62,6 +65,31 @@ if [ "$GLOBAL" -eq 0 ]; then
     echo "  + settings.json (agent: orchestrator)"
   elif ! grep -q '"agent"' "$SETTINGS"; then
     echo "  ! $SETTINGS já existe: adicione \"agent\": \"orchestrator\" manualmente"
+  fi
+fi
+
+# Conecta o MCP do Jira (Atlassian, OAuth) no projeto.
+if [ "$GLOBAL" -eq 1 ]; then
+  echo "  i modo global: o .mcp.json não é copiado. Para usar o Jira em todos os projetos:"
+  echo "    claude mcp add --scope user --transport http atlassian https://mcp.atlassian.com/v2/mcp"
+else
+  MCP_TARGET="$(pwd)/.mcp.json"
+  if [ -f "$MCP_TARGET" ] && [ "$FORCE" -eq 0 ]; then
+    echo "  ! .mcp.json ja existe: mescle manualmente o servidor atlassian"
+    echo "    (dentro de \"mcpServers\")"
+    cat <<'EOF'
+    "atlassian": {
+      "type": "http",
+      "url": "https://mcp.atlassian.com/v2/mcp"
+    }
+EOF
+  else
+    if [ -n "$ROOT_DIR" ]; then
+      cp "$ROOT_DIR/.mcp.json" "$MCP_TARGET"
+    else
+      curl -fsSL "$REPO_RAW/.mcp.json" -o "$MCP_TARGET"
+    fi
+    echo "  + .mcp.json (MCP atlassian; autentique com /mcp)"
   fi
 fi
 
