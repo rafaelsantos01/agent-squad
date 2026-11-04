@@ -2,15 +2,15 @@
 
 Meus agentes do Claude Code, prontos para levar para qualquer projeto. Um **orquestrador** conduz o trabalho em fases fixas e delega cada fase a um especialista.
 
-| Agente | Função | Saída |
-|---|---|---|
-| `orchestrator` | Conduz as fases na ordem: entrevista (uma pergunta por vez, sempre com resposta recomendada), exploração, plano, Jira, convenções, build, documentação e verificação. Não pula etapas. | Marcadores de fase |
-| `explorer` | Só lê. Lê os docs e depois o código para mapear repos afetados, padrões existentes (`arquivo:linha`), integrações e riscos. | Exploration Report |
-| `planner` | Escreve o plano em `docs/en/plans/` com template fixo, sem placeholders, passos em ordem de dependência e rollback. | Caminho do plano + passos |
-| `analyst` | Cuida do Jira: tarefa em linguagem de negócio com o porquê, comenta o plano de execução com os links dos MRs e move os status. | Jira Report |
-| `builder` | Lê o `CONVENTIONS.md`, implementa o plano numa worktree com branch nova, roda build e lint, faz push e abre o MR. | Build Report |
-| `documenter` | Cria o `CONVENTIONS.md` a partir do código e atualiza o INDEX do repo, a doc de rotas e a doc de arquitetura. | Documentation Report |
-| `explainer` | Só lê. Responde "como funciona X?" com referências. | Resposta + arquivos |
+| Agente | Função | Modelo | Saída |
+|---|---|---|---|
+| `orchestrator` | Conduz as fases na ordem: entrevista (uma pergunta por vez, sempre com resposta recomendada), exploração, plano, Jira, convenções, build, documentação e verificação. Não pula etapas. | `inherit` | Marcadores de fase |
+| `explorer` | Só lê. Lê os docs e depois o código para mapear repos afetados, padrões existentes (`arquivo:linha`), integrações e riscos. | `sonnet` | Exploration Report |
+| `planner` | Escreve o plano em `docs/en/plans/` com template fixo, sem placeholders, passos em ordem de dependência e rollback. | `inherit` | Caminho do plano + passos |
+| `analyst` | Cuida do Jira: tarefa em linguagem de negócio com o porquê, comenta o plano de execução com os links dos MRs e move os status. | `haiku` | Jira Report |
+| `builder` | Lê o `CONVENTIONS.md`, implementa o plano numa worktree com branch nova, roda build e lint, faz push e abre o MR. | `sonnet` | Build Report |
+| `documenter` | Cria o `CONVENTIONS.md` a partir do código e atualiza o INDEX do repo, a doc de rotas e a doc de arquitetura. | `sonnet` | Documentation Report |
+| `explainer` | Só lê. Responde "como funciona X?" com referências. | `sonnet` | Resposta + arquivos |
 
 ```
 1 ENTREVISTA → 2 EXPLORAÇÃO → 3 PLANO → 4 JIRA → 5 CONVENÇÕES → 6 BUILD → 7 DOCUMENTAÇÃO → 8 VERIFICAÇÃO
